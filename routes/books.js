@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const Book = require('../models').Book;
 
+const Sequelize = require('sequelize');
+const { Op } = Sequelize.Op;
+
 /* Handler function to wrap each route. */
 function asyncHandler(cb){
   return async(req, res, next) => {
@@ -20,6 +23,29 @@ router.get('/', asyncHandler(async (req, res) => {
     order: [["createdAt", "DESC"]]
    });
   res.render("books/index", { books, title: "Books" });
+  // try {
+  //   const currentPage = req.query.page && Number(req.query.page) > 0
+  //     ? Number(req.query.page)
+  //     : 0;
+  //   const offset = currentPage * 10
+  //   const previousPage = currentPage - 1 >= 0
+  //     ? currentPage - 1
+  //     : 0;
+  //   const nextPage = currentPage + 1;
+  //   const { count, rows } = await Book.findAndCountAll(
+  //     {
+  //       order: [["createdAt", "DESC"]],
+  //       offset: offset,
+  //       limit: 10
+  //     }
+  //   );
+  //   const totalPages = count / 10;
+  //   const page = { previousPage, currentPage, nextPage, totalPages };
+
+  //   res.render("books/index", { books: rows, title: "Books", page })
+  // } catch(error) {
+  //     throw error;
+  // }
 }));
 
 /* GET new book form. */
@@ -44,17 +70,19 @@ router.post('/new', asyncHandler(async (req, res) => {
 }));
 
 /* GET individual book. */
-router.get("/:id", asyncHandler(async (req, res) => {
+router.get("/:id", asyncHandler(async (req, res, next) => {
   const book = await Book.findByPk(req.params.id);
   if (book) {
     res.render("books/update-book", { book, title: book.title }); 
   } else {
-    res.render('books/page-not-found');
+    const err = new Error('This book does not exist.');
+    err.status = 404;
+    next(err);
   }
 }));
 
 /* Update a specific book. */
-router.post('/:id', asyncHandler(async (req, res) => {
+router.post('/:id', asyncHandler(async (req, res, next) => {
   let book;
   try {
     book = await Book.findByPk(req.params.id);
@@ -62,7 +90,9 @@ router.post('/:id', asyncHandler(async (req, res) => {
       await book.update(req.body);
       res.redirect("/books/" + book.id); 
     } else {
-      res.render('books/page-not-found');
+      const err = new Error('This book does not exist.');
+      err.status = 404;
+      next(err);
     }
   } catch (error) {
     if(error.name === "SequelizeValidationError") {
@@ -76,13 +106,15 @@ router.post('/:id', asyncHandler(async (req, res) => {
 }));
 
 /* Delete individual article. */
-router.post('/:id/delete', asyncHandler(async (req ,res) => {
+router.post('/:id/delete', asyncHandler(async (req ,res, next) => {
   const book = await Book.findByPk(req.params.id);
   if (book) {
     await book.destroy();
     res.redirect("/books");
   } else {
-    res.render('books/page-not-found');
+    const err = new Error('This book does not exist.');
+    err.status = 404;
+    next(err);
   }
 }));
 

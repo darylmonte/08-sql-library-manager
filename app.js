@@ -41,21 +41,24 @@ app.use('/books', booksRouter);
 
 // custom 404 error handler
 app.use((req, res, next) => {
-  next(createError(404, "The page you're looking for doesn't exist!"));
+  console.log('404 error handler called');
+  const err = new Error('It looks like the page you\'re looking for does not exist.');
+  err.status = 404;
+  next(err);
 });
 
 // global error handler
 app.use((err, req, res, next) => {
-  res.locals.message = err.message;
+  if (err) {
+    console.log('Global error handler called', err);
+  }
   if (err.status === 404) {
-    res.render("books/page-not-found", { err });
+    console.log('404 error handler called');
+    res.status(404).render('books/page-not-found', { err });
   } else {
-    console.log('500 global error handler called');
-    err.message = err.message || 'Something went wrong with the server';
-    res.locals.error = err;
+    err.message = err.message || `It looks like something went wrong on the server.`;
     res.status(err.status || 500).render('error', { err });
   }
-  
 });
 
 module.exports = app;
