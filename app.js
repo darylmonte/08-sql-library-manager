@@ -6,7 +6,6 @@ const logger = require('morgan');
 const sequelize = require('./models/index').sequelize;
 
 const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
 const booksRouter = require('./routes/books');
 
 const app = express();
@@ -22,7 +21,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use('/books', booksRouter);
 
 (async () => {
@@ -41,34 +39,16 @@ app.use('/books', booksRouter);
   }
 })();
 
-// // catch 404 and forward to error handler
-// app.use(function(req, res, next) {
-//   next(createError(404));
-// });
-
-// // error handler
-// app.use(function(err, req, res, next) {
-//   // set locals, only providing error in development
-//   res.locals.message = err.message;
-//   res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-//   // render the error page
-//   res.status(err.status || 500);
-//   res.render('error');
-// });
-
 // custom 404 error handler
-app.use((req, res) => {
-  const error = new Error("The page you're looking for doesn't exist!");
-  error.status = 404;
-  res.status(404).render("books/not-found", { error })
-  
+app.use((req, res, next) => {
+  next(createError(404, "The page you're looking for doesn't exist!"));
 });
 
 // global error handler
-app.use((err,req, res, next) => {
+app.use((err, req, res, next) => {
+  res.locals.message = err.message;
   if (err.status === 404) {
-    res.render("books/not-found", { error });
+    res.render("books/page-not-found", { err });
   } else {
     console.log('500 global error handler called');
     err.message = err.message || 'Something went wrong with the server';
